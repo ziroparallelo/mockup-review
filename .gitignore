@@ -1,0 +1,9 @@
+.DS_Store
+__pycache__/
+*.pyc
+.pytest_cache/
+node_modules/
+test-results/
+playwright-report/
+.vscode/
+.idea/
