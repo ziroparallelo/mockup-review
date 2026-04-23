@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# mockup-review — launcher CLI per il framework mockup-review
+# Uso:
+#   mockup-review                      # revisiona la directory corrente
+#   mockup-review /path/to/project     # revisiona la directory indicata
+#   mockup-review --port 8790 <dir>    # porta custom
+#   mockup-review --help
+set -euo pipefail
+
+PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PORT="${MOCKUP_REVIEW_PORT:-8765}"
+NO_BROWSER=""
+PROJECT_DIR=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help)
+      cat <<USAGE
+mockup-review — review interattivo dei progetti web via browser
+
+Uso:
+  mockup-review [--port N] [--no-browser] [project-dir]
+
+Opzioni:
+  --port N        Porta HTTP (default 8765, env MOCKUP_REVIEW_PORT)
+  --no-browser    Non aprire automaticamente il browser
+  -h, --help      Questa guida
+
+Esempi:
+  cd ~/progetto && mockup-review
+  mockup-review ~/Documents/cliente-foo
+  mockup-review --port 8790 ~/Documents/cliente-bar
+USAGE
+      exit 0 ;;
+    --port)       PORT="$2"; shift 2 ;;
+    --no-browser) NO_BROWSER="1"; shift ;;
+    --)           shift; PROJECT_DIR="${1:-}"; break ;;
+    -*)           echo "Opzione sconosciuta: $1" >&2; exit 2 ;;
+    *)            PROJECT_DIR="$1"; shift ;;
+  esac
+done
+
+PROJECT_DIR="${PROJECT_DIR:-$PWD}"
+if [ ! -d "$PROJECT_DIR" ]; then
+  echo "Directory non trovata: $PROJECT_DIR" >&2
+  exit 1
+fi
+PROJECT_DIR="$(cd "$PROJECT_DIR" && pwd)"
+
+echo "[mockup-review] progetto: $PROJECT_DIR"
+echo "[mockup-review] plugin:   $PLUGIN_DIR"
+echo "[mockup-review] porta:    $PORT"
+
+# Scaffold se necessario
+mkdir -p "$PROJECT_DIR/.preview/mockups"
+for f in _server.py _decisions.js _shared.css; do
+  if [ ! -f "$PROJECT_DIR/.preview/mockups/$f" ]; then
+    cp "$PLUGIN_DIR/templates/$f" "$PROJECT_DIR/.preview/mockups/$f"
+    echo "[mockup-review] template copiato: $f"
+  fi
+done
+[ -f "$PROJECT_DIR/.preview/decisions.json" ] || echo '{}' > "$PROJECT_DIR/.preview/decisions.json"
+
+# Libera la porta se occupata da un vecchio server
+OLD_PID="$(lsof -ti :$PORT 2>/dev/null || true)"
+if [ -n "$OLD_PID" ]; then
+  echo "[mockup-review] killing old server on :$PORT (pid $OLD_PID)"
+  kill "$OLD_PID" 2>/dev/null || true
+  sleep 0.5
+fi
+
+# Avvia il server
+cd "$PROJECT_DIR"
+MOCKUP_REVIEW_PORT="$PORT" python3 .preview/mockups/_server.py &
+SERVER_PID=$!
+
+# Aspetta che sia pronto (max 3s)
+for _ in 1 2 3 4 5 6; do
+  if curl -sSf -o /dev/null "http://127.0.0.1:$PORT/.preview/decisions.json" 2>/dev/null; then
+    break
+  fi
+  sleep 0.5
+done
+
+URL="http://127.0.0.1:$PORT/.preview/mockups/index.html"
+[ -f "$PROJECT_DIR/.preview/mockups/index.html" ] || URL="http://127.0.0.1:$PORT/.preview/mockups/"
+
+echo "[mockup-review] server attivo  → $URL"
+echo "[mockup-review] pid server     → $SERVER_PID"
+echo "[mockup-review] Ctrl+C per fermare"
+
+if [ -z "$NO_BROWSER" ]; then
+  open "$URL" 2>/dev/null || true
+fi
+
+# Trap per shutdown pulito
+cleanup() {
+  echo ""
+  echo "[mockup-review] shutdown…"
+  kill "$SERVER_PID" 2>/dev/null || true
+  wait "$SERVER_PID" 2>/dev/null || true
+  exit 0
+}
+trap cleanup INT TERM
+
+wait "$SERVER_PID"

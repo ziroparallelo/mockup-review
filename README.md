@@ -10,7 +10,29 @@ Built for client revision workflows: the user sees the mockup in a browser, clic
 
 ## Install
 
-### Option A — git clone + symlink (verified, works today)
+### Option 1 — Standalone app/CLI (no Claude Code needed)
+
+```bash
+# Clone
+git clone https://github.com/ziroparallelo/mockup-review.git ~/.local/mockup-review
+
+# Install CLI to PATH
+mkdir -p ~/.local/bin
+ln -snf ~/.local/mockup-review/bin/mockup-review ~/.local/bin/mockup-review
+# Ensure ~/.local/bin is in PATH (add to ~/.zshrc if not):
+#   export PATH="$HOME/.local/bin:$PATH"
+
+# Install macOS .app (folder picker launcher)
+osacompile -o ~/Applications/"Mockup Review.app" ~/.local/mockup-review/macos/mockup-review-launcher.applescript
+```
+
+Then either:
+
+- **Terminal:** `cd ~/my-project && mockup-review` — server starts + browser opens
+- **Finder / Spotlight:** open `Mockup Review.app` → pick a folder → server starts + browser opens
+- **Custom port:** `mockup-review --port 8790 ~/my-project`
+
+### Option 2 — Claude Code plugin (git clone + symlink)
 
 ```bash
 git clone https://github.com/ziroparallelo/mockup-review.git ~/.local/mockup-review
@@ -20,7 +42,7 @@ ln -snf ~/.local/mockup-review ~/.claude/plugins/mockup-review
 
 Restart Claude Code. Commands `/mockup-init`, `/mockup-serve`, `/mockup-stop`, `/client-revision` become available in any project, and the `UserPromptSubmit` hook auto-injects pending comments from `.preview/decisions.json` on every prompt.
 
-### Option B — `claude plugin install` (when plugin is in a marketplace)
+### Option 3 — `claude plugin install` (when plugin is in a marketplace)
 
 ```bash
 claude plugin install mockup-review
