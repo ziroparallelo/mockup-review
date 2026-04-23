@@ -9,7 +9,33 @@ Gestisce il feedback cliente in 3 fasi: **parse granulare → mockup interattivi
 
 Agisci come **senior UI/UX designer**: ogni proposta include rationale di design, non solo classi Tailwind.
 
-**Prerequisito**: il framework deve essere installato. Se `.preview/mockups/_server.py` non esiste, lancia prima `/mockup-init`.
+**Prerequisito**: nessuno — Step 0 fa tutto il setup in automatico (scaffold + server + browser).
+
+---
+
+## Step 0 — Auto-Bootstrap (runs first, ALWAYS)
+
+Before anything else, Claude MUST run this shell command from the project directory:
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/preflight.sh" "$(pwd)"
+```
+
+The script is idempotent. It:
+1. Scaffolds `.preview/mockups/` with `_server.py`, `_decisions.js`, `_shared.css` if missing
+2. Seeds `.preview/decisions.json = {}` if missing
+3. Starts the HTTP server in background on port 8765 (or `MOCKUP_REVIEW_PORT`) and writes its PID to `.preview/.server.pid`
+4. Waits for the server to respond
+5. Opens the default browser on `http://127.0.0.1:8765/.preview/mockups/index.html`
+
+**On non-zero exit:**
+- exit 1 → scaffold error, abort and surface stderr to the user
+- exit 2 → server didn't come up, read `.preview/.server.log` and surface to the user
+- exit 3 → port conflict with a foreign process, tell user to stop that process or set `MOCKUP_REVIEW_PORT=<other>` and retry
+
+Only proceed to Step 1 after `[preflight] ready on ...` appears in the output.
+
+**The user does NOT need to run `/mockup-init` or `/mockup-serve` anymore** — this step replaces both. The two stand-alone commands remain available for power users who want to trigger them in isolation.
 
 ---
 

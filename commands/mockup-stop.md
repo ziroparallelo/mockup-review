@@ -7,7 +7,7 @@ allowed-tools: Bash, AskUserQuestion
 
 1. Kill process on port 8765:
    ```bash
-   lsof -i :8765 -t 2>/dev/null | xargs kill 2>/dev/null
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/stop.sh" "$(pwd)"
    ```
 
 2. Ask the user via AskUserQuestion whether to also remove `.preview/mockups/*.html` files (the generated mockups) and `.preview/decisions.json`. **Never** automatically delete — always confirm.

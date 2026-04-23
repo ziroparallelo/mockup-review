@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] — 2026-04-23
+
+### Added
+
+- `/client-revision` now auto-bootstraps: no need to run `/mockup-init` or `/mockup-serve` manually. It scaffolds `.preview/mockups/`, starts the server in background, waits for readiness, and opens the browser.
+- `scripts/preflight.sh` — idempotent bootstrap script (safe to run many times). Writes server PID to `.preview/.server.pid` and server log to `.preview/.server.log`.
+- `scripts/stop.sh` — graceful shutdown using the PID file; falls back to `lsof` kill.
+- `bin/mockup-review` — standalone CLI launcher + macOS `.app` bundle (Finder/Spotlight double-click).
+- Env vars: `MOCKUP_REVIEW_NO_BROWSER=1` to skip browser open; `MOCKUP_REVIEW_PORT` honored everywhere; `MOCKUP_REVIEW_ROOT` for test isolation.
+
+### Changed
+
+- `/mockup-stop` uses `scripts/stop.sh` for graceful shutdown (was `lsof | xargs kill`).
+- `commands/client-revision.md`: new "Step 0 — Auto-Bootstrap" section at the top.
+- `templates/_server.py`: honors `MOCKUP_REVIEW_ROOT` env var to override `PROJECT_ROOT` (enables testable isolation).
+
+### Tests
+
+- 5 new unit tests for preflight.sh idempotency, scaffolding, PID file lifecycle, port-conflict detection (`tests/test_preflight.py`).
+- 1 new integration test covering preflight → POST → hook pickup (`tests/test_integration_bootstrap.py`).
+- 4 new Playwright E2E tests for bootstrap behavior against a scratch project (`tests/e2e/preflight.spec.ts`).
+
+Total: 30 tests (19 pytest + 11 Playwright).
+
+---
+
 ## [0.1.0] — 2026-04-23
 
 ### Initial release
