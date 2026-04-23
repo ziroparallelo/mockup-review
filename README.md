@@ -10,11 +10,32 @@ Built for client revision workflows: the user sees the mockup in a browser, clic
 
 ## Install
 
+### Option A — git clone + symlink (verified, works today)
+
+```bash
+git clone https://github.com/ziroparallelo/mockup-review.git ~/.local/mockup-review
+mkdir -p ~/.claude/plugins
+ln -snf ~/.local/mockup-review ~/.claude/plugins/mockup-review
+```
+
+Restart Claude Code. Commands `/mockup-init`, `/mockup-serve`, `/mockup-stop`, `/client-revision` become available in any project, and the `UserPromptSubmit` hook auto-injects pending comments from `.preview/decisions.json` on every prompt.
+
+### Option B — `claude plugin install` (when plugin is in a marketplace)
+
 ```bash
 claude plugin install mockup-review
 ```
 
-Or from the marketplace. Requires Claude Code `>=2.0`.
+Requires Claude Code `>=2.0`.
+
+## Verify install worked
+
+```bash
+mkdir /tmp/mockup-verify && cd /tmp/mockup-verify
+claude
+```
+
+Inside the fresh Claude Code session, type `/mockup-init`. You should see a scaffold confirmation creating `.preview/mockups/` with `_server.py`, `_decisions.js`, `_shared.css`.
 
 ## Quick start
 
